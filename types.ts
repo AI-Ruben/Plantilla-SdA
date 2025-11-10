@@ -1,5 +1,14 @@
 export type Language = 'es' | 'eu';
 
+export interface Activity {
+  id: string;
+  description: string;
+  sessions: string;
+  resources: string;
+  products: string;
+  instruments: string;
+}
+
 export interface SdaFormData {
   Campo1: string;
   Campo2: string;
@@ -9,40 +18,18 @@ export interface SdaFormData {
   Campo6: string;
   Campo7: string;
   Campo8: string;
-  Campo9: string;
-  Campo10: string;
-  Campo11: string;
-  Campo12: string;
+  Campo9: string[];
+  Campo10: string[];
+  Campo11: string[];
+  Campo12: string[];
   Campo13: string;
   Campo14: string;
   Campo15: string;
   Campo16: string;
   Campo17: string;
-  Campo18: string;
-  Campo19: string;
-  Campo20: string;
-  Campo21: string;
-  Campo22: string;
-  Campo23: string;
-  Campo24: string;
-  Campo25: string;
-  Campo26: string;
-  Campo27: string;
-  Campo28: string;
-  Campo29: string;
-  Campo30: string;
-  Campo31: string;
-  Campo32: string;
-  Campo33: string;
-  Campo34: string;
-  Campo35: string;
-  Campo36: string;
-  Campo37: string;
-  Campo38: string;
-  Campo39: string;
-  Campo40: string;
-  Campo41: string;
-  Campo42: string;
+  
+  activities: Activity[];
+
   Campo43: string;
   Campo44: string;
   Campo45: string;

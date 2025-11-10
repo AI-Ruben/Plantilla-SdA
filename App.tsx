@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
-import type { Language, SdaFormData } from './types';
+import type { Language, SdaFormData, Activity } from './types';
 import { INITIAL_SDA_FORM_DATA } from './constants';
 import { useTranslations } from './hooks/useTranslations';
 
@@ -12,7 +12,6 @@ import LanguageSelector from './components/LanguageSelector';
 import ExportControls from './components/ExportControls';
 import LanguageSelectionScreen from './components/LanguageSelectionScreen';
 
-// A world-class senior frontend React engineer would define helper components outside the main component.
 const Header: React.FC<{ language: Language; setLanguage: (lang: Language) => void; t: any }> = ({ language, setLanguage, t }) => (
     <header className="bg-white shadow-md p-4 sticky top-0 z-20">
         <div className="container mx-auto flex justify-between items-center">
@@ -29,20 +28,76 @@ const Header: React.FC<{ language: Language; setLanguage: (lang: Language) => vo
 export default function App() {
     const [language, setLanguage] = useState<Language | null>(null);
     const [sdaData, setSdaData] = useState<SdaFormData>(INITIAL_SDA_FORM_DATA);
-    const { t } = useTranslations(language || 'es'); // Default to 'es' for initial render before selection
+    const { t } = useTranslations(language || 'es'); 
     const [isExporting, setIsExporting] = useState(false);
 
     const previewRef = useRef<HTMLDivElement>(null);
+
+    const generateId = () => `activity-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
     const handleDataChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setSdaData(prev => ({ ...prev, [name]: value }));
     }, []);
 
+    const handleDynamicFieldChange = useCallback((field: keyof SdaFormData, index: number, value: string) => {
+        setSdaData(prev => {
+            const currentValues = prev[field];
+            if (!Array.isArray(currentValues)) return prev;
+
+            const newValues = [...currentValues];
+            newValues[index] = value;
+            return { ...prev, [field]: newValues };
+        });
+    }, []);
+
+    const handleAddDynamicField = useCallback((field: keyof SdaFormData) => {
+        setSdaData(prev => {
+            const currentValues = prev[field];
+            if (!Array.isArray(currentValues)) return prev;
+
+            return { ...prev, [field]: [...currentValues, ''] };
+        });
+    }, []);
+
+    const handleRemoveDynamicField = useCallback((field: keyof SdaFormData, index: number) => {
+        setSdaData(prev => {
+            const currentValues = prev[field];
+            if (!Array.isArray(currentValues) || currentValues.length <= 1) return prev;
+
+            return { ...prev, [field]: currentValues.filter((_, i) => i !== index) };
+        });
+    }, []);
+    
+    const handleActivityChange = useCallback((index: number, field: keyof Omit<Activity, 'id'>, value: string) => {
+        setSdaData(prev => {
+            const newActivities = [...prev.activities];
+            newActivities[index] = { ...newActivities[index], [field]: value };
+            return { ...prev, activities: newActivities };
+        });
+    }, []);
+
+    const handleAddActivity = useCallback(() => {
+        setSdaData(prev => ({
+            ...prev,
+            activities: [
+                ...prev.activities,
+                { id: generateId(), description: '', sessions: '', resources: '', products: '', instruments: '' }
+            ]
+        }));
+    }, []);
+
+    const handleRemoveActivity = useCallback((index: number) => {
+        if (sdaData.activities.length <= 1) return; // Prevent deleting the last activity
+        setSdaData(prev => ({
+            ...prev,
+            activities: prev.activities.filter((_, i) => i !== index)
+        }));
+    }, [sdaData.activities.length]);
+
+
     const handleExport = async (format: 'pdf' | 'png' | 'csv') => {
         setIsExporting(true);
-
-        // Ensure the preview content is rendered before capturing
         await new Promise(resolve => setTimeout(resolve, 100));
 
         if (format === 'csv') {
@@ -56,12 +111,8 @@ export default function App() {
                     console.error("Preview pages not found");
                     return;
                 }
-
-                if (format === 'png') {
-                    await exportToPng(page1, page2);
-                } else if (format === 'pdf') {
-                    await exportToPdf(page1, page2);
-                }
+                if (format === 'png') await exportToPng(page1, page2);
+                else if (format === 'pdf') await exportToPdf(page1, page2);
             } catch (error) {
                 console.error("Export failed:", error);
                 alert(t.exportError);
@@ -71,26 +122,41 @@ export default function App() {
     };
 
     const exportToCsv = () => {
-        // FIX: The original implementation had a bug where it used all keys from translations for headers,
-        // but only data values, leading to a mismatch in columns. This also fixes the TypeScript error on line 73.
-        // This revised version iterates over the data keys to build both headers and values correctly.
-        const dataKeys = Object.keys(sdaData) as Array<keyof SdaFormData>;
-
-        const headers = dataKeys.map(key => {
-            // Get the translated field name, fallback to the key itself.
-            const header = t.fields[key] || key;
-            // Escape quotes in header.
-            return `"${header.replace(/"/g, '""')}"`;
-        }).join(',');
+        const staticDataKeys = Object.keys(INITIAL_SDA_FORM_DATA).filter(key => key !== 'activities') as Array<Exclude<keyof SdaFormData, 'activities'>>;
         
-        const values = dataKeys.map(key => {
-            const value = sdaData[key] || '';
-            // Escape quotes in value.
-            return `"${String(value).replace(/"/g, '""')}"`;
-        }).join(',');
+        let headers: string[] = staticDataKeys.map(key => t.fields[key] || key);
+        let values: (string | number)[] = staticDataKeys.map(key => {
+            // FIX: Removed incorrect type assertion `as keyof SdaFormData` which was widening the type of `key`.
+            const value = sdaData[key];
+            // FIX: The value could be an array of activities due to type widening from other handlers.
+            // Add a type guard to ensure we only process strings before calling `.trim()`.
+            if (Array.isArray(value)) {
+                return value.filter(v => typeof v === 'string' && v.trim() !== '').join('\n');
+            }
+            return value || '';
+        });
 
-        const csvContent = `data:text/csv;charset=utf-8,${headers}\n${values}`;
-        const encodedUri = encodeURI(csvContent);
+        sdaData.activities.forEach((activity, index) => {
+            const activityNumber = index + 1;
+            headers.push(`${t.fields.activity} ${activityNumber}: ${t.fields.Campo18}`);
+            headers.push(`${t.fields.activity} ${activityNumber}: ${t.fields.Campo19}`);
+            headers.push(`${t.fields.activity} ${activityNumber}: ${t.fields.Campo20}`);
+            headers.push(`${t.fields.activity} ${activityNumber}: ${t.fields.Campo21}`);
+            headers.push(`${t.fields.activity} ${activityNumber}: ${t.fields.Campo22}`);
+            
+            values.push(activity.description);
+            values.push(activity.sessions);
+            values.push(activity.resources);
+            values.push(activity.products);
+            values.push(activity.instruments);
+        });
+
+        const csvContent = [
+            headers.map(h => `"${h.replace(/"/g, '""')}"`).join(','),
+            values.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')
+        ].join('\n');
+        
+        const encodedUri = "data:text/csv;charset=utf-8," + encodeURIComponent(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
         link.setAttribute("download", "situacion_de_aprendizaje.csv");
@@ -106,7 +172,7 @@ export default function App() {
         link1.href = canvas1.toDataURL('image/png');
         link1.click();
 
-        await new Promise(resolve => setTimeout(resolve, 500)); // Brief pause
+        await new Promise(resolve => setTimeout(resolve, 500)); 
 
         const canvas2 = await html2canvas(page2, { scale: 2 });
         const link2 = document.createElement('a');
@@ -146,7 +212,17 @@ export default function App() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div>
                         <h2 className="text-2xl font-bold text-brand-dark-teal mb-4">{t.formTitle}</h2>
-                        <SdaForm data={sdaData} onDataChange={handleDataChange} t={t} />
+                        <SdaForm 
+                          data={sdaData} 
+                          onDataChange={handleDataChange} 
+                          onActivityChange={handleActivityChange}
+                          onAddActivity={handleAddActivity}
+                          onRemoveActivity={handleRemoveActivity}
+                          onDynamicFieldChange={handleDynamicFieldChange}
+                          onAddDynamicField={handleAddDynamicField}
+                          onRemoveDynamicField={handleRemoveDynamicField}
+                          t={t} 
+                        />
                     </div>
                     <div className="hidden lg:block">
                         <h2 className="text-2xl font-bold text-brand-dark-teal mb-4">{t.previewTitle}</h2>
@@ -157,7 +233,6 @@ export default function App() {
                 </div>
                  <ExportControls onExport={handleExport} isExporting={isExporting} t={t} />
             </main>
-            {/* Hidden preview for high-quality export */}
             <div className="fixed -left-[9999px] top-0 opacity-0 -z-50" aria-hidden="true">
               <div ref={previewRef} className="bg-white">
                 <SdaPreview data={sdaData} t={t} />

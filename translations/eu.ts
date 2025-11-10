@@ -9,6 +9,9 @@ export const eu = {
   exporting: "Esportatzen...",
   exportError: "Errore bat gertatu da esportazioan. Mesedez, saiatu berriro.",
   language: "Hizkuntza",
+  continue: "jar.",
+  addEntry: "Gehitu sarrera",
+  removeEntry: "Ezabatu sarrera",
   
   fields: {
     Campo1: "PROGRAMAZIO UNITATEA Zbk.",
@@ -38,40 +41,14 @@ export const eu = {
     Campo17: "Estrategia didaktikoak",
 
     section4: "4. Jardueren sekuentziazio konpetentziala saioen arabera",
-    actividad1: "1. jardueraren edo prozesuaren deskribapena",
+    activity: "Jarduera",
+    addActivity: "Gehitu Jarduera",
+    removeActivity: "Ezabatu Jarduera",
     Campo18: "Deskribapena",
     Campo19: "Saioak",
     Campo20: "Baliabideak",
     Campo21: "Produktu ebaluagarriak",
     Campo22: "Ebaluazio-tresnak eta teknikak",
-    
-    actividad2: "2. jardueraren edo prozesuaren deskribapena",
-    Campo23: "Deskribapena",
-    Campo24: "Saioak",
-    Campo25: "Baliabideak",
-    Campo26: "Produktu ebaluagarriak",
-    Campo27: "Ebaluazio-tresnak eta teknikak",
-    
-    actividad3: "3. jardueraren edo prozesuaren deskribapena",
-    Campo28: "Deskribapena",
-    Campo29: "Saioak",
-    Campo30: "Baliabideak",
-    Campo31: "Produktu ebaluagarriak",
-    Campo32: "Ebaluazio-tresnak eta teknikak",
-
-    actividad4: "4. jardueraren edo prozesuaren deskribapena",
-    Campo33: "Deskribapena",
-    Campo34: "Saioak",
-    Campo35: "Baliabideak",
-    Campo36: "Produktu ebaluagarriak",
-    Campo37: "Ebaluazio-tresnak eta teknikak",
-    
-    actividad5: "5. jardueraren edo prozesuaren deskribapena",
-    Campo38: "Deskribapena",
-    Campo39: "Saioak",
-    Campo40: "Baliabideak",
-    Campo41: "Produktu ebaluagarriak",
-    Campo42: "Ebaluazio-tresnak eta teknikak",
 
     section5: "5. Irakaskuntza-praktikaren ebaluazioa",
     Campo43: "Diseinuaren ebaluazioa",
