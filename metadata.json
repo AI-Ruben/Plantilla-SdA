@@ -1,0 +1,5 @@
+{
+  "name": "Generador de Situaciones de Aprendizaje",
+  "description": "Una aplicación para que los docentes de Navarra puedan completar, personalizar y exportar el formulario de una Situación de Aprendizaje (SdA) en castellano o euskera.",
+  "requestFramePermissions": []
+}
